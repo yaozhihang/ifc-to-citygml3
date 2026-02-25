@@ -3,7 +3,7 @@ plugins {
     id 'application'
 }
 
-group = 'com.tum.gis'
+group = 'org.citydb'
 version = '0.9'
 sourceCompatibility = '17'
 
@@ -39,7 +39,7 @@ dependencies {
 }
 
 application {
-    mainClass = 'com.tum.gis.ifc2citygml.IFC2CityGMLConverter'
+    mainClass = 'org.citydb.ifc2citygml.IFC2CityGMLConverter'
 }
 
 // Include extract_geometry.py in distribution alongside bin/ and lib/

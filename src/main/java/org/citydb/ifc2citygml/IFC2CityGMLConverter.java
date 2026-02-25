@@ -1,16 +1,18 @@
-package com.tum.gis.ifc2citygml;
+package org.citydb.ifc2citygml;
 
 import org.apache.commons.cli.*;
+import org.citydb.ifc2citygml.config.ConversionConfig;
+import org.citydb.ifc2citygml.io.CityGMLGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * IFC to CityGML 3.0 Converter
- *
+ * <p>
  * Written by Thomas H. Kolbe (thomas.kolbe@tum.de), Chair of Geoinformatics,
- * School of Engineering and Design, Technical University of Munich
- *
- * Java Port Version 0.9, Last change: 2026-02-18
+ * Technical University of Munich
+ * <p>
+ * Java Port Version 0.9
  */
 public class IFC2CityGMLConverter {
 
@@ -78,6 +80,11 @@ public class IFC2CityGMLConverter {
                 .build());
 
         options.addOption(Option.builder()
+                .longOpt("no-appearances")
+                .desc("Do not export CityGML Appearance (material/color) data")
+                .build());
+
+        options.addOption(Option.builder()
                 .longOpt("xoffset")
                 .hasArg()
                 .type(Number.class)
@@ -96,12 +103,6 @@ public class IFC2CityGMLConverter {
                 .hasArg()
                 .type(Number.class)
                 .desc("Offset to shift the model in Z direction (applied after georeferencing)")
-                .build());
-
-        options.addOption(Option.builder()
-                .longOpt("geometry-json")
-                .hasArg()
-                .desc("Path to pre-extracted geometry JSON file (from extract_geometry.py)")
                 .build());
 
         options.addOption(Option.builder("h")
@@ -128,31 +129,23 @@ public class IFC2CityGMLConverter {
                 outputPath = baseName + ".gml";
             }
 
-            boolean noReferences = cmd.hasOption("no-references");
-            boolean noProperties = cmd.hasOption("no-properties");
-            boolean reorientShells = cmd.hasOption("reorient-shells");
-            boolean georefOktoberfest = cmd.hasOption("georef-oktoberfest");
-            boolean listUnmappedDoorsWindows = cmd.hasOption("list-unmapped-doors-and-windows");
-            boolean unrelatedDoorsWindowsInDummyBce = cmd.hasOption("unrelated-doors-and-windows-in-dummy-bce");
-            boolean noGenericAttributeSets = cmd.hasOption("no-generic-attribute-sets");
-            boolean psetNamesAsPrefixes = cmd.hasOption("pset-names-as-prefixes");
-            boolean noStoreys = cmd.hasOption("no-storeys");
+            ConversionConfig config = ConversionConfig.builder()
+                    .noReferences(cmd.hasOption("no-references"))
+                    .reorientShells(cmd.hasOption("reorient-shells"))
+                    .noProperties(cmd.hasOption("no-properties"))
+                    .georefOktoberfest(cmd.hasOption("georef-oktoberfest"))
+                    .listUnmappedDoorsWindows(cmd.hasOption("list-unmapped-doors-and-windows"))
+                    .unrelatedDoorsWindowsInDummyBce(cmd.hasOption("unrelated-doors-and-windows-in-dummy-bce"))
+                    .noGenericAttributeSets(cmd.hasOption("no-generic-attribute-sets"))
+                    .setNamesAsPrefixes(cmd.hasOption("pset-names-as-prefixes"))
+                    .noStoreys(cmd.hasOption("no-storeys"))
+                    .noAppearances(cmd.hasOption("no-appearances"))
+                    .xOffset(parseDouble(cmd, "xoffset"))
+                    .yOffset(parseDouble(cmd, "yoffset"))
+                    .zOffset(parseDouble(cmd, "zoffset"))
+                    .build();
 
-            double xOffset = cmd.hasOption("xoffset") ?
-                    ((Number) cmd.getParsedOptionValue("xoffset")).doubleValue() : 0.0;
-            double yOffset = cmd.hasOption("yoffset") ?
-                    ((Number) cmd.getParsedOptionValue("yoffset")).doubleValue() : 0.0;
-            double zOffset = cmd.hasOption("zoffset") ?
-                    ((Number) cmd.getParsedOptionValue("zoffset")).doubleValue() : 0.0;
-
-            String geometryJsonPath = cmd.getOptionValue("geometry-json");
-
-            CityGMLGenerator generator = new CityGMLGenerator(
-                    inputPath, outputPath, noReferences, reorientShells, noProperties,
-                    georefOktoberfest, listUnmappedDoorsWindows, unrelatedDoorsWindowsInDummyBce,
-                    noGenericAttributeSets, psetNamesAsPrefixes, noStoreys,
-                    xOffset, yOffset, zOffset, geometryJsonPath
-            );
+            CityGMLGenerator generator = new CityGMLGenerator(inputPath, outputPath, config);
 
             generator.generate();
 
@@ -164,5 +157,10 @@ public class IFC2CityGMLConverter {
             logger.error("Error during conversion: " + e.getMessage(), e);
             System.exit(1);
         }
+    }
+
+    private static double parseDouble(CommandLine cmd, String option) throws ParseException {
+        return cmd.hasOption(option)
+                ? ((Number) cmd.getParsedOptionValue(option)).doubleValue() : 0.0;
     }
 }
