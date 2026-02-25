@@ -1,0 +1,58 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.tum.gis'
+version = '0.9'
+sourceCompatibility = '17'
+
+repositories {
+    mavenCentral()
+    maven {
+        url "https://dl.cloudsmith.io/public/3dcitydb/maven/maven/"
+    }
+    maven {
+        url "https://repo.opensourcebim.org/maven"
+    }
+}
+
+dependencies {
+    // citygml4j for CityGML 3.0
+    implementation 'org.citygml4j:citygml4j-core:3.2.8'
+    implementation 'org.citygml4j:citygml4j-xml:3.2.8'
+
+    // BIMserver dependencies
+    implementation 'org.opensourcebim:pluginbase:1.6.0'
+    implementation 'org.opensourcebim:shared:1.6.0'
+    implementation 'org.opensourcebim:ifcplugins:0.0.106'
+
+    // Apache Commons CLI for command-line parsing
+    implementation 'commons-cli:commons-cli:1.5.0'
+
+    // JSON parsing
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    // Logging
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'org.slf4j:slf4j-simple:2.0.9'
+}
+
+application {
+    mainClass = 'com.tum.gis.ifc2citygml.IFC2CityGMLConverter'
+}
+
+// Include extract_geometry.py in distribution alongside bin/ and lib/
+distributions {
+    main {
+        contents {
+            from('src/main/python') {
+                into 'python'
+            }
+        }
+    }
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
