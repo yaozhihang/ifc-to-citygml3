@@ -38,8 +38,20 @@ dependencies {
     implementation 'org.slf4j:slf4j-simple:2.0.9'
 }
 
+jar {
+    manifest {
+        attributes('Main-Class': application.mainClass,
+                'Class-Path': configurations.runtimeClasspath.collect { it.name }.join(' ')
+        )
+    }
+}
+
 application {
     mainClass = 'org.citydb.ifc2citygml.IFC2CityGMLConverter'
+
+    startScripts {
+        classpath = jar.outputs.files
+    }
 }
 
 // Include extract_geometry.py in distribution alongside bin/ and lib/
