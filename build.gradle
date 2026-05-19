@@ -68,3 +68,13 @@ distributions {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// Analysis tool: scans IFC files and produces a histogram of geometry-related
+// entity types. Used to scope a future pure-Java geometry kernel empirically.
+//   gradlew analyzeGeometry --args="<ifc-file-or-dir> [output.json]"
+tasks.register('analyzeGeometry', JavaExec) {
+    group = 'analysis'
+    description = 'Scan IFC file(s) for geometry-entity usage statistics'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'org.citydb.ifc2citygml.analyzer.GeometryAnalyzer'
+}
