@@ -105,6 +105,12 @@ public class IFC2CityGMLConverter {
                 .desc("Offset to shift the model in Z direction (applied after georeferencing)")
                 .build());
 
+        options.addOption(Option.builder()
+                .longOpt("srs")
+                .hasArg()
+                .desc("EPSG code (e.g. 'EPSG:25832') used when the IFC has no IfcProjectedCRS")
+                .build());
+
         options.addOption(Option.builder("h")
                 .longOpt("help")
                 .desc("Print this help message")
@@ -143,6 +149,7 @@ public class IFC2CityGMLConverter {
                     .xOffset(parseDouble(cmd, "xoffset"))
                     .yOffset(parseDouble(cmd, "yoffset"))
                     .zOffset(parseDouble(cmd, "zoffset"))
+                    .defaultSrsName(cmd.getOptionValue("srs"))
                     .build();
 
             CityGMLGenerator generator = new CityGMLGenerator(inputPath, outputPath, config);

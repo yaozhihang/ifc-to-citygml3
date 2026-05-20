@@ -84,7 +84,7 @@ public class GeometryHandler {
                     this.srsName = crsList.get(0).getName();
                 }
             } else {
-                logger.info("No IfcMapConversion found. Using local coordinates.");
+                applyLoGeoRef30Fallback();
             }
         } catch (Exception e) {
             logger.warn("Error setting up georeferencing: {}", e.getMessage());
@@ -99,6 +99,71 @@ public class GeometryHandler {
             logger.info("Georeference set to Theresienwiese in Munich (EPSG:25832): E={}, N={}, H={}",
                     eastings, northings, orthogonalHeight);
         }
+    }
+
+    /**
+     * Fallback when no IfcMapConversion (LoGeoRef 50) is present.
+     * Reads georeferencing from:
+     *   - IfcGeometricRepresentationContext.WorldCoordinateSystem.Location (translation)
+     *   - IfcGeometricRepresentationContext.TrueNorth (rotation around Z)
+     *   - config.defaultSrsName() (srsName; cannot be derived from IFC)
+     *
+     * Vertices in the geometry cache are extracted with USE_WORLD_COORDS=True.
+     * Verified empirically: ifcopenshell already bakes the full IfcLocalPlacement
+     * chain INCLUDING IfcSite.ObjectPlacement into the world coords, but does
+     * NOT apply the WCS origin. So we add only the WCS origin here — adding the
+     * IfcSite placement would double-count it and produce a map offset.
+     */
+    private void applyLoGeoRef30Fallback() {
+        logger.info("No IfcMapConversion found. Falling back to LoGeoRef 30 (WCS origin + TrueNorth).");
+
+        double tx = 0, ty = 0, tz = 0;
+
+        for (IfcGeometricRepresentationContext ctx : model.getAll(IfcGeometricRepresentationContext.class)) {
+            if (ctx.getContextType() != null && !"Model".equalsIgnoreCase(ctx.getContextType())) continue;
+
+            if (ctx.getWorldCoordinateSystem() instanceof IfcAxis2Placement3D wcs
+                    && wcs.getLocation() != null) {
+                List<Double> c = wcs.getLocation().getCoordinates();
+                if (c.size() >= 1) tx = c.get(0);
+                if (c.size() >= 2) ty = c.get(1);
+                if (c.size() >= 3) tz = c.get(2);
+            }
+
+            if (ctx.getTrueNorth() != null) {
+                List<Double> dr = ctx.getTrueNorth().getDirectionRatios();
+                if (dr.size() >= 2) {
+                    double dx = dr.get(0), dy = dr.get(1);
+                    double norm = Math.hypot(dx, dy);
+                    if (norm > 0) {
+                        double cosR = dy / norm;
+                        double sinR = dx / norm;
+                        this.rotationMatrix = new double[][]{
+                                {cosR, -sinR, 0},
+                                {sinR,  cosR, 0},
+                                {0,     0,    1}
+                        };
+                    }
+                }
+            }
+            break;
+        }
+
+        this.eastings = tx;
+        this.northings = ty;
+        this.orthogonalHeight = tz;
+
+        if (config.defaultSrsName() != null && !config.defaultSrsName().isBlank()) {
+            this.srsName = config.defaultSrsName();
+        } else if (tx != 0 || ty != 0) {
+            logger.warn("LoGeoRef 30 produced translation ({}, {}, {}) but no --srs was given; " +
+                    "srsName remains '{}'.", tx, ty, tz, this.srsName);
+        }
+
+        logger.info("LoGeoRef 30: E={}, N={}, H={}, rotation=[[{},{}],[{},{}]], srs={}",
+                eastings, northings, orthogonalHeight,
+                rotationMatrix[0][0], rotationMatrix[0][1],
+                rotationMatrix[1][0], rotationMatrix[1][1], srsName);
     }
 
     public String getSrsName() {

@@ -13,7 +13,8 @@ public record ConversionConfig(
         boolean noAppearances,
         double xOffset,
         double yOffset,
-        double zOffset
+        double zOffset,
+        String defaultSrsName
 ) {
 
     public static Builder builder() {
@@ -34,6 +35,7 @@ public record ConversionConfig(
         private double xOffset;
         private double yOffset;
         private double zOffset;
+        private String defaultSrsName;
 
         private Builder() {
         }
@@ -103,12 +105,17 @@ public record ConversionConfig(
             return this;
         }
 
+        public Builder defaultSrsName(String v) {
+            this.defaultSrsName = v;
+            return this;
+        }
+
         public ConversionConfig build() {
             return new ConversionConfig(
                     noReferences, reorientShells, noProperties, georefOktoberfest,
                     listUnmappedDoorsWindows, unrelatedDoorsWindowsInDummyBce,
                     noGenericAttributeSets, setNamesAsPrefixes, noStoreys, noAppearances,
-                    xOffset, yOffset, zOffset
+                    xOffset, yOffset, zOffset, defaultSrsName
             );
         }
     }
